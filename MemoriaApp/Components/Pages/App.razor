@@ -1,13 +1,15 @@
-﻿@page "/counter"
+﻿@page "/app"
 @rendermode InteractiveServer
 
-<PageTitle>Counter</PageTitle>
+<PageTitle>App</PageTitle>
+<div style="border: 2px solid darkslategrey; height: 500px; width: 750px;">
+    <h1>App page</h1>
 
-<h1>Counter</h1>
+    <p role="status">Current count: @currentCount</p>
 
-<p role="status">Current count: @currentCount</p>
+    <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+</div>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
 @code {
     private int currentCount = 0;
