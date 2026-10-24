@@ -1,22 +1,62 @@
 ﻿@page "/app"
+@using MemoriaApp.Components.Models
+@using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
+@inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>App</PageTitle>
+<h1>App page</h1>
 <div style="border: 2px solid darkslategrey; height: 500px; width: 750px;">
-    <h1>App page</h1>
+    
+    <div><span>Deck count: @deckList.Count</span></div>
+    <input placeholder="Deck name.." @bind="newDeck"/>
+    
+    <button class="btn btn-primary" @onclick="addDeck">Add deck</button>
+    <ul>
+        @foreach (var deck in deckList)
+        {
+            <li>@deck.Name deckid: @deck.Id</li>
+            <a @onclick="deleteDeck" @bind="deck.Id"></a>
+        }
+    </ul>
 
-    <p role="status">Current count: @currentCount</p>
-
-    <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+    
 </div>
 
 
 @code {
-    private int currentCount = 0;
 
-    private void IncrementCount()
+    private List<DeckModel> deckList = new List<DeckModel>();
+    
+    protected override async Task OnInitializedAsync()
     {
-        currentCount++;
+        await using var context = DbFactory.CreateDbContext();
+        deckList = context.Decks.ToList();
+        Console.WriteLine("Decks count: " + deckList.Count);
+    }    
+
+    private string? newDeck;
+    private int nextDeckID = 1;
+
+    private void deleteDeck()
+    {
+        using var context = DbFactory.CreateDbContext();
+        deckList.Remove(deckList[nextDeckID]);
+    }
+
+    private void addDeck()
+    {
+        if (!string.IsNullOrWhiteSpace(newDeck))
+        {
+            var deck = new DeckModel()
+            {
+                Name = newDeck
+            };
+            using var context = DbFactory.CreateDbContext();
+            context.Decks.Add(deck);
+            context.SaveChanges();
+            deckList.Add(deck);
+        }
     }
 
 }

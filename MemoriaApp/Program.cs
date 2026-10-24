@@ -1,10 +1,16 @@
 using MemoriaApp.Components;
+using MemoriaApp.Components.Models;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Bind DbContext to SQLite configuration
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")));
 
 var app = builder.Build();
 
