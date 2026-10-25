@@ -5,28 +5,30 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>App</PageTitle>
-<h1>App page</h1>≈
+<h1>App page</h1>
 <div class = "parent-div">
     
-    <div><span>Deck count: @deckList.Count</span></div>
-    <input placeholder="Deck name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
-                                                                 {
-                                                                     if (e.Key == "Enter") addDeck();
-                                                                 })"/>
+    <div class = "column">
+        
+        <ul>
+            @foreach (var deck in deckList)
+            {
+                <li class = "flex-container child-element">
+                    <span class = "deckName">@deck.Name</span>
+                    <a @onclick="()=>deleteDeck(deck)" class = "delete">Delete</a>
+                </li>
+            }
+        </ul>
+    </div>
     
-    <button class="btn btn-primary" @onclick="addDeck">Add deck</button>
-    <ul>
-        @foreach (var deck in deckList)
+    
+    <div class = "column">
+        <input class = "input" placeholder="Deck name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
         {
-            <li class = "flex-container child-element">
-                <span class = "deckName">@deck.Name Deck Id: @deck.Id</span>
-                <a @onclick="()=>deleteDeck(deck)" class = "delete">Delete</a>
-            </li>
-            
-
-        }
-    </ul>
-
+            if (e.Key == "Enter") addDeck();
+        })"/>
+    <button class="btn btn-primary" @onclick="addDeck">Add deck</button>
+    </div>
     
 </div>
 
