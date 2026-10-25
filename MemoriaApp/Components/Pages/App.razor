@@ -1,4 +1,5 @@
 ﻿@page "/Decks"
+@using Azure.Core
 @using MemoriaApp.Components.Models
 @using Microsoft.CodeAnalysis
 @using Microsoft.EntityFrameworkCore
@@ -12,9 +13,9 @@
     
     <div class = "column">
         <input class = "input" placeholder="Deck name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
-        {
-        if (e.Key == "Enter") AddDeck();
-        })"/>
+                                                                                                           {
+                                                                                                               if (e.Key == "Enter") AddDeck();
+                                                                                                           })"/>
         <button class="btn btn-primary" @onclick="AddDeck">Add deck</button>
         <ul>
             @foreach (var deck in deckList)
@@ -26,15 +27,20 @@
             }
         </ul>
     </div>
-    
+ 
     
     <div class="column">
-        <select>
-            @foreach (var deck in deckList)
-            {
-                <option>@deck.Name</option>
-            }
-        </select>`
+        <form>
+            <select>
+                @foreach (var deck in deckList)
+                 {
+                <option @bind="deckDropdown" @bind:event="oninput" value=@(deck)>@deck.Name</option>
+                }
+            </select>`
+        </form>
+        
+        <p>deck dropdown text: @deckDropdown</p>
+
         @if (studyDeck == null)
         {
             <p> select deck pls</p>
@@ -43,10 +49,8 @@
         {
             <p>Deck studying rn: @studyDeck?.Name</p>
             <p>Cardlist count: @cardList.Count</p>
-            <input class = "input" placeholder="Card name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
-                                                                                                               {
-                                                                                                                   if (e.Key == "Enter") AddDeck();
-                                                                                                               })"/>
+            <input class="input" placeholder="Card name.." @bind="newCard" @bind:event="oninput"/>
+            <input/>
             <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
 
             <ul>
@@ -66,7 +70,7 @@
 
     </div>
     
-</div>
+</div>   
 
 
 @code {
@@ -84,6 +88,8 @@
     
     private string? newDeck;
     private string? newCard;
+    private DeckModel? deckDropdown;
+
     private void DeleteDeck(DeckModel deckToDelete)
     {
         using var context = DbFactory.CreateDbContext();
@@ -133,3 +139,9 @@
     }
 
 }
+
+
+
+
+
+
