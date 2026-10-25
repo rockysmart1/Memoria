@@ -61,14 +61,13 @@ h1:focus {
 
 .flex-container{
     display: flex;
-    gap: 5px;
+    gap: 0px;
     min-width: 0;
 }
 
 .deckName{
     flex: 1;
     padding: 10px;
-    background: #9c9b9b;
     max-width: 70%;
     list-style-type: none;
     overflow: hidden;
@@ -77,10 +76,12 @@ h1:focus {
     min-width: 0;
 }
 
+.deckName:hover{
+    background-color: #c1c1c1;
+}
 .delete{
     flex: 1;
     padding: 10px;
-    background: #9c9b9b;
     max-width: 30%;
     color: inherit;
     text-decoration: none;
@@ -98,7 +99,7 @@ h1:focus {
 
 .child-element{
     max-width: 100%;
-    padding-top: 5px;
+    /*padding-top: 5px;*/
 }
 
 ul{

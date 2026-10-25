@@ -1,33 +1,69 @@
-﻿@page "/app"
+﻿@page "/Decks"
 @using MemoriaApp.Components.Models
+@using Microsoft.CodeAnalysis
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
 
-<PageTitle>App</PageTitle>
+<PageTitle>My decks</PageTitle>
 <h1>App page</h1>
 <div class = "parent-div">
     
     <div class = "column">
-        
+        <input class = "input" placeholder="Deck name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
+        {
+        if (e.Key == "Enter") AddDeck();
+        })"/>
+        <button class="btn btn-primary" @onclick="AddDeck">Add deck</button>
         <ul>
             @foreach (var deck in deckList)
             {
                 <li class = "flex-container child-element">
-                    <span class = "deckName">@deck.Name</span>
-                    <a @onclick="()=>deleteDeck(deck)" class = "delete">Delete</a>
+                    <span class = "deckName" @onclick="()=>StartStudy(deck)">@deck.Name</span>
+                    <a @onclick="()=>DeleteDeck(deck)" class = "delete">Delete</a>
                 </li>
             }
         </ul>
     </div>
     
     
-    <div class = "column">
-        <input class = "input" placeholder="Deck name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
+    <div class="column">
+        <select>
+            @foreach (var deck in deckList)
+            {
+                <option>@deck.Name</option>
+            }
+        </select>`
+        @if (studyDeck == null)
         {
-            if (e.Key == "Enter") addDeck();
-        })"/>
-    <button class="btn btn-primary" @onclick="addDeck">Add deck</button>
+            <p> select deck pls</p>
+        }
+        else
+        {
+            <p>Deck studying rn: @studyDeck?.Name</p>
+            <p>Cardlist count: @cardList.Count</p>
+            <input class = "input" placeholder="Card name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
+                                                                                                               {
+                                                                                                                   if (e.Key == "Enter") AddDeck();
+                                                                                                               })"/>
+            <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
+
+            <ul>
+                @foreach (var card in cardList)
+                {
+                    @if (card.deck_id == studyDeck.Id)
+                    {
+                        <li class="flex-container child-element">
+                            <p>Front text: @card.front_text DeckId = @card.deck_id</p>
+                        </li>
+                    }
+                }
+
+            </ul>
+        }
+
+
     </div>
     
 </div>
@@ -36,17 +72,19 @@
 @code {
 
     private List<DeckModel> deckList = new List<DeckModel>();
+    private List<CardModel> cardList = new List<CardModel>();
     
     protected override async Task OnInitializedAsync()
     {
         await using var context = DbFactory.CreateDbContext();
         deckList = context.Decks.ToList();
-        Console.WriteLine("Decks count: " + deckList.Count);
-    }    
+        cardList = context.Cards.ToList();
+    }
 
+    
     private string? newDeck;
-
-    private void deleteDeck(DeckModel deckToDelete)
+    private string? newCard;
+    private void DeleteDeck(DeckModel deckToDelete)
     {
         using var context = DbFactory.CreateDbContext();
         context.Decks.Remove(deckToDelete);
@@ -54,7 +92,7 @@
         deckList.Remove(deckToDelete);
     }
 
-    private void addDeck()
+    private void AddDeck()
     {
         if (!string.IsNullOrWhiteSpace(newDeck))
         {
@@ -68,6 +106,30 @@
             deckList.Add(deck);
             newDeck = "";
         }
+    }
+    private void AddCard(int deckIdLink)
+    {
+        if (!string.IsNullOrWhiteSpace(newCard))
+        {
+            var card = new CardModel()
+            {
+                front_text = newCard,
+                deck_id = deckIdLink
+            };
+            using var context = DbFactory.CreateDbContext();
+            context.Cards.Add(card);
+            context.SaveChanges();
+            cardList.Add(card);
+            newCard = "";
+        }
+    }
+    
+    public DeckModel? studyDeck;
+    public void StartStudy(DeckModel deckToStudy)
+    {
+        // Navigation.NavigateTo($"Study/{deckToStudy.Id}");
+    
+        studyDeck = deckToStudy;
     }
 
 }

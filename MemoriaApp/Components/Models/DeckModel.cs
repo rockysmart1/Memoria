@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     // Replace 'Deck' with your actual data model class
     public DbSet<DeckModel> Decks { get; set; } 
+    public DbSet<CardModel> Cards { get; set; } 
 }
 
 [Table("deck")]
@@ -23,10 +24,17 @@ public class DeckModel
     public string Name { get; set; }
 }
 
+[Table("card")]
 public class CardModel
 {
+    [Column("id")]
     public int id { get; set; }
+    
+    [Column("front_text")]
     public string front_text { get; set; }
+    
+    [Column("deck_id")]
+    public int deck_id { get; set; }
 }
 
 /*
