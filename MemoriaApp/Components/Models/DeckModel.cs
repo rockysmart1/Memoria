@@ -22,6 +22,9 @@ public class DeckModel
     
     [Column("name")]
     public string Name { get; set; }
+
+    [ForeignKey("deck_id")]
+    public ICollection<CardModel> Cards { get; set; } = new List<CardModel>();
 }
 
 [Table("card")]
@@ -33,6 +36,9 @@ public class CardModel
     [Column("front_text")]
     public string front_text { get; set; }
     
+    [Column("back_text")]
+    public string back_text { get; set; }
+
     [Column("deck_id")]
     public int deck_id { get; set; }
 }

@@ -47,21 +47,17 @@
         }
         else
         {
-            <p>Deck studying rn: @studyDeck?.Name</p>
-            <p>Cardlist count: @cardList.Count</p>
-            <input class="input" placeholder="Card name.." @bind="newCard" @bind:event="oninput"/>
-            <input/>
+            <p>Current deck: @studyDeck?.Name</p>
+            <input class="input" placeholder="Front.." @bind="newCardFront" @bind:event="oninput"/>
+            <input class="input" placeholder="Back.." @bind="newCardBack" @bind:event="oninput"/>
             <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
 
             <ul>
-                @foreach (var card in cardList)
+                @foreach (var card in studyDeck.Cards)
                 {
-                    @if (card.deck_id == studyDeck.Id)
-                    {
-                        <li class="flex-container child-element">
-                            <p>Front text: @card.front_text DeckId = @card.deck_id</p>
-                        </li>
-                    }
+                    <li class="flex-container child-element">
+                        <p>Front: @card.front_text Back: @card.back_text </p>
+                    </li>
                 }
 
             </ul>
@@ -76,18 +72,16 @@
 @code {
 
     private List<DeckModel> deckList = new List<DeckModel>();
-    private List<CardModel> cardList = new List<CardModel>();
     
     protected override async Task OnInitializedAsync()
     {
         await using var context = DbFactory.CreateDbContext();
         deckList = context.Decks.ToList();
-        cardList = context.Cards.ToList();
     }
 
-    
     private string? newDeck;
-    private string? newCard;
+    private string? newCardFront;
+    private string? newCardBack;
     private DeckModel? deckDropdown;
 
     private void DeleteDeck(DeckModel deckToDelete)
@@ -115,18 +109,20 @@
     }
     private void AddCard(int deckIdLink)
     {
-        if (!string.IsNullOrWhiteSpace(newCard))
+        if (!string.IsNullOrWhiteSpace(newCardFront) && !string.IsNullOrWhiteSpace(newCardBack))
         {
             var card = new CardModel()
             {
-                front_text = newCard,
+                front_text = newCardFront,
+                back_text = newCardBack,
                 deck_id = deckIdLink
             };
             using var context = DbFactory.CreateDbContext();
             context.Cards.Add(card);
             context.SaveChanges();
-            cardList.Add(card);
-            newCard = "";
+            studyDeck = ReloadDeck(deckIdLink);
+            newCardFront = "";
+            newCardBack = "";
         }
     }
     
@@ -134,10 +130,17 @@
     public void StartStudy(DeckModel deckToStudy)
     {
         // Navigation.NavigateTo($"Study/{deckToStudy.Id}");
-    
-        studyDeck = deckToStudy;
+        studyDeck = ReloadDeck(deckToStudy.Id);
     }
 
+    private DeckModel ReloadDeck(int deckId)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var deck = context.Decks
+            .Include(d => d.Cards)
+            .First(d => d.Id == deckId);
+        return deck;
+    }
 }
 
 
