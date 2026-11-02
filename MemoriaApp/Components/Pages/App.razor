@@ -23,6 +23,10 @@
                 <li class = "flex-container child-element">
                     <span class = "deckName" @onclick="()=>StartStudy(deck)">@deck.Name</span>
                     <a @onclick="()=>DeleteDeck(deck)" class = "delete">Delete</a>
+                    @if (deck.deleted_at != null)
+                    {
+                        <p>@deck.deleted_at?</p>
+                    }
                 </li>
             }
         </ul>
@@ -30,16 +34,6 @@
  
     
     <div class="column">
-        <form>
-            <select>
-                @foreach (var deck in deckList)
-                 {
-                <option @bind="deckDropdown" @bind:event="oninput" value=@(deck)>@deck.Name</option>
-                }
-            </select>`
-        </form>
-        
-        <p>deck dropdown text: @deckDropdown</p>
 
         @if (studyDeck == null)
         {
@@ -51,7 +45,7 @@
             <input class="input" placeholder="Front.." @bind="newCardFront" @bind:event="oninput"/>
             <input class="input" placeholder="Back.." @bind="newCardBack" @bind:event="oninput"/>
             <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
-
+            
             <ul>
                 @foreach (var card in studyDeck.Cards)
                 {
@@ -59,8 +53,17 @@
                         <p>Front: @card.front_text Back: @card.back_text </p>
                     </li>
                 }
-
             </ul>
+            
+            <div style = "border: 1px solid black; padding: 10px">
+                <p> @(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.front_text ?? "no card found" )</p>
+                <p>--------</p>
+                <p> @(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.back_text ?? "no card found" )</p>
+            </div>
+            <button @onclick="() => previousCard()">Previous Card</button>
+            <button @onclick="() => nextCard()">Next Card</button>
+            
+            
         }
 
 
@@ -82,14 +85,15 @@
     private string? newDeck;
     private string? newCardFront;
     private string? newCardBack;
-    private DeckModel? deckDropdown;
+
 
     private void DeleteDeck(DeckModel deckToDelete)
     {
-        using var context = DbFactory.CreateDbContext();
-        context.Decks.Remove(deckToDelete);
-        context.SaveChanges();
-        deckList.Remove(deckToDelete);
+        
+        // using var context = DbFactory.CreateDbContext();
+        deckToDelete.deleted_at = DateTime.Now;
+        // context.SaveChanges();
+        // deckList.Remove(deckToDelete);
     }
 
     private void AddDeck()
@@ -135,11 +139,31 @@
 
     private DeckModel ReloadDeck(int deckId)
     {
+        cardPosition = 0;
         using var context = DbFactory.CreateDbContext();
         var deck = context.Decks
             .Include(d => d.Cards)
             .First(d => d.Id == deckId);
         return deck;
+    }
+    private int cardPosition = 0;
+    
+    private void nextCard()
+    {
+        if (cardPosition < studyDeck.Cards.Count - 1)
+        {
+            cardPosition++;
+        }
+        
+    }
+    
+    private void previousCard()
+    {
+        if (cardPosition > 0)
+        {
+            cardPosition--;
+        }
+        
     }
 }
 

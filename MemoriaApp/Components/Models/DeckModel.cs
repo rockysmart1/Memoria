@@ -25,6 +25,11 @@ public class DeckModel
 
     [ForeignKey("deck_id")]
     public ICollection<CardModel> Cards { get; set; } = new List<CardModel>();
+    
+    
+    [Column("deleted_at")]
+    
+    public DateTime? deleted_at { get; set; }
 }
 
 [Table("card")]
@@ -41,6 +46,9 @@ public class CardModel
 
     [Column("deck_id")]
     public int deck_id { get; set; }
+    
+    [Column("deleted_at")]
+    public DateTime? deleted_at { get; set; }
 }
 
 /*
