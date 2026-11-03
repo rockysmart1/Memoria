@@ -42,7 +42,7 @@
         }
         else
         {
-            <p>Current deck: @studyDeck?.Name</p>
+            <p>Current deck: @studyDeck.Name</p>
             <input class="input" placeholder="Front.." @bind="newCardFront" @bind:event="oninput"/>
             <input class="input" placeholder="Back.." @bind="newCardBack" @bind:event="oninput"/>
             <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
@@ -51,7 +51,11 @@
                 @foreach (var card in studyDeck.Cards)
                 {
                     <li class="flex-container child-element">
+                        
                         <p>Front: @card.front_text Back: @card.back_text </p>
+                        <a @onclick="() => DeleteCard(card)"> Delete</a>
+                        
+                        
                     </li>
                 }
             </ul>
@@ -61,8 +65,8 @@
                 <p>--------</p>
                 <p> @(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.back_text ?? "no card found" )</p>
             </div>
-            <button @onclick="() => previousCard()">Previous Card</button>
-            <button @onclick="() => nextCard()">Next Card</button>
+            <button @onclick="() => PreviousCard()">Previous Card</button>
+            <button @onclick="() => NextCard()">Next Card</button>
             
             
         }
@@ -81,6 +85,7 @@
     {
         await using var context = DbFactory.CreateDbContext();
         deckList = context.Decks.ToList();
+
     }
 
     private string? newDeck;
@@ -99,7 +104,23 @@
         }
         deckList.Remove(deckToDelete);
     }
+    
+    private void DeleteCard(CardModel cardToDelete)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var card = context.Cards.Find(cardToDelete.id);
+        if (card != null)
+        {
+            card.deleted_at = DateTime.Now;
+            context.SaveChanges();
+        }
 
+        if (studyDeck != null)
+        {
+            studyDeck = ReloadDeck(studyDeck.Id);
+        }
+    }
+    
     private void AddDeck()
     {
         if (!string.IsNullOrWhiteSpace(newDeck))
@@ -146,22 +167,22 @@
         cardPosition = 0;
         using var context = DbFactory.CreateDbContext();
         var deck = context.Decks
-            .Include(d => d.Cards)
+            .Include(d => d.Cards.Where(c => c.deleted_at == null))
             .First(d => d.Id == deckId);
         return deck;
     }
     private int cardPosition = 0;
     
-    private void nextCard()
+    private void NextCard()
     {
-        if (cardPosition < studyDeck.Cards.Count - 1)
+        if (cardPosition < studyDeck?.Cards.Count - 1)
         {
             cardPosition++;
         }
         
     }
     
-    private void previousCard()
+    private void PreviousCard()
     {
         if (cardPosition > 0)
         {
