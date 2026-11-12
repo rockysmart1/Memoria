@@ -1,6 +1,8 @@
 using MemoriaApp.Components;
 using MemoriaApp.Components.Models;
 using Microsoft.EntityFrameworkCore;
+using FSRS.Core.Extensions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 

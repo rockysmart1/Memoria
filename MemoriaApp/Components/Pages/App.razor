@@ -28,6 +28,18 @@
                         <span class = "deckName" @onclick="()=>StartStudy(deck)">@deck.Name</span>
                         <a @onclick="()=>DeleteDeck(deck)" class = "delete">Delete</a>
                     }
+                    
+                </li>
+            }
+            <p>Deleted decks:</p>
+            @foreach (var deck in deckList)
+            {
+                <li class = "flex-container child-element">
+                    @if (deck.deleted_at != null)
+                    {
+                        <span class = "deckName">@deck.Name</span>
+                        <a @onclick="()=>RestoreDeck(deck)" class = "delete">Restore</a>
+                    }
                 </li>
             }
         </ul>
@@ -43,6 +55,11 @@
         else
         {
             <p>Current deck: @studyDeck.Name</p>
+            <input class = "input" placeholder="Rename deck.." @bind="renameDeckSpace" @bind:event="oninput" @onkeydown="@(e=>
+                                                                                                                         {
+                                                                                                                             if (e.Key == "Enter") RenameDeck(studyDeck);
+                                                                                                                         })"/>
+            <button class="btn btn-primary" @onclick="() => RenameDeck(studyDeck)">Rename deck</button>
             <input class="input" placeholder="Front.." @bind="newCardFront" @bind:event="oninput"/>
             <input class="input" placeholder="Back.." @bind="newCardBack" @bind:event="oninput"/>
             <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
@@ -101,8 +118,54 @@
         {
             deck.deleted_at = DateTime.Now;
             context.SaveChanges();
+            deckToDelete.deleted_at = DateTime.Now;
         }
-        deckList.Remove(deckToDelete);
+        
+    }
+    private void RestoreDeck(DeckModel deckToRestore)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var deck = context.Decks.Find(deckToRestore.Id);
+        if (deck?.deleted_at != null)
+        {
+            deck?.deleted_at = null;
+            context.SaveChanges();
+            deckToRestore.deleted_at = null;
+        }
+        
+    }
+    private void AddDeck()
+    {
+        if (string.IsNullOrWhiteSpace(newDeck)) return;
+
+        var deck = new DeckModel()
+        {
+        Name = newDeck
+        };
+        using var context = DbFactory.CreateDbContext();
+        context.Decks.Add(deck);
+        context.SaveChanges();
+        deckList.Add(deck);
+        newDeck = "";
+    }
+
+    private string? renameDeckSpace;
+    
+    private void RenameDeck(DeckModel deckToRename)
+    {
+        if (string.IsNullOrWhiteSpace(renameDeckSpace)) return;
+        
+        using var context = DbFactory.CreateDbContext();
+        var deck = context.Decks.Find(deckToRename.Id);
+        
+        if (deck != null)
+        {
+            deck.Name = renameDeckSpace;
+            context.SaveChanges();
+            deckToRename.Name = renameDeckSpace;
+            deckList = context.Decks.ToList();
+        }
+        
     }
     
     private void DeleteCard(CardModel cardToDelete)
@@ -121,45 +184,31 @@
         }
     }
     
-    private void AddDeck()
-    {
-        if (!string.IsNullOrWhiteSpace(newDeck))
-        {
-            var deck = new DeckModel()
-            {
-                Name = newDeck
-            };
-            using var context = DbFactory.CreateDbContext();
-            context.Decks.Add(deck);
-            context.SaveChanges();
-            deckList.Add(deck);
-            newDeck = "";
-        }
-    }
+    
     private void AddCard(int deckIdLink)
     {
-        if (!string.IsNullOrWhiteSpace(newCardFront) && !string.IsNullOrWhiteSpace(newCardBack))
+        if (string.IsNullOrWhiteSpace(newCardFront) && string.IsNullOrWhiteSpace(newCardBack)) return;
+        
+        var card = new CardModel()
         {
-            var card = new CardModel()
-            {
-                front_text = newCardFront,
-                back_text = newCardBack,
-                deck_id = deckIdLink
-            };
-            using var context = DbFactory.CreateDbContext();
-            context.Cards.Add(card);
-            context.SaveChanges();
-            studyDeck = ReloadDeck(deckIdLink);
-            newCardFront = "";
-            newCardBack = "";
-        }
+            front_text = newCardFront,
+            back_text = newCardBack,
+            deck_id = deckIdLink
+        };
+        using var context = DbFactory.CreateDbContext();
+        context.Cards.Add(card);
+        context.SaveChanges();
+        studyDeck = ReloadDeck(deckIdLink);
+        newCardFront = "";
+        newCardBack = "";
+        
     }
     
     public DeckModel? studyDeck;
     public void StartStudy(DeckModel deckToStudy)
     {
-        // Navigation.NavigateTo($"Study/{deckToStudy.Id}");
         studyDeck = ReloadDeck(deckToStudy.Id);
+        
     }
 
     private DeckModel ReloadDeck(int deckId)
@@ -169,6 +218,7 @@
         var deck = context.Decks
             .Include(d => d.Cards.Where(c => c.deleted_at == null))
             .First(d => d.Id == deckId);
+
         return deck;
     }
     private int cardPosition = 0;
