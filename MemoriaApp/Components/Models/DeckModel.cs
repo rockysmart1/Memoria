@@ -49,6 +49,11 @@ public class CardModel
     
     [Column("deleted_at")]
     public DateTime? deleted_at { get; set; }
+    
+    public int Repetitions { get; set; } = 0;
+    public int Interval { get; set; } = 0;
+    public double EaseFactor { get; set; } = 2.5;
+    public DateTime NextReview { get; set; } = DateTime.UtcNow;
 }
 
 /*

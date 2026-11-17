@@ -51,8 +51,6 @@
 
             </script>
 <PageTitle>My decks</PageTitle>
-<h1>App page</h1>
-
 
 <div class = "parent-div">
     <div class = "column">
@@ -93,51 +91,100 @@
 
         @if (studyDeck == null)
         {
-            <p> select deck pls</p>
+            <p>Please select a deck to start studying</p>
         }
         else
         {
-            <p>Current deck: @studyDeck.Name</p>
-            <input class = "input" placeholder="Rename deck.." @bind="renameDeckSpace" @bind:event="oninput" @onkeydown="@(e=>
-                                                                                                                         {
-                                                                                                                             if (e.Key == "Enter") RenameDeck(studyDeck);
-                                                                                                                         })"/>
-            <button class="btn btn-primary btn-outline-secondary" @onclick="() => RenameDeck(studyDeck)">Rename deck</button>
-
-            <!-- Create the editor container -->
-            <div style="display: flex; gap: 16px; margin-top: 16px">
-                <div style="width: 300px; margin-bottom: 16px;">
-                    <div id="editor" style="height: 200px;"></div>
-                </div>
-
-                <div style="width: 300px; margin-bottom: 16px;">
-                    <div id="editor2" style="height: 200px;"></div>
-                </div>
+            <div style="display: flex; gap: 8px; margin: 12px 0;">
+                <button class="btn @(isStudyMode ? "btn-primary" : "btn-outline-secondary")" 
+                        @onclick="() => isStudyMode = true">
+                    Study (@dueCards.Count due)
+                </button>
+                <button class="btn @(!isStudyMode ? "btn-primary" : "btn-outline-secondary")" 
+                        @onclick="() => isStudyMode = false">
+                    Create and edit cards (@studyDeck.Cards.Count)
+                </button>
             </div>
-            <!-- Initialize Quill editor -->
-            
-            <button class="btn btn-primary btn-outline-secondary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
-
-            <ul>
-                @foreach (var card in studyDeck.Cards)
+            @if (isStudyMode)
+            {
+                <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 24px; margin-top: 20px; background: white; max-width: 600px;">
+                @if (currentCard == null)
                 {
-                    <li class="flex-container child-element" style = "background: #0dcaf0; margin: 5px; max-width: 600px; padding: 10px">
-                        <p>Front: @((MarkupString)(card.front_text ?? "")) Back:@((MarkupString)(card.back_text ?? "")) </p>
-                        <a @onclick="() => DeleteCard(card)"> Delete</a>
-                        
-                    </li>
+                    <p style="margin-bottom: 12px;"><strong>All caught up!</strong> No cards due right now.</p>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="SimulateNextDay">Demo: Simulate +1 Day</button>
                 }
-            </ul>
-            
-            <div style = "border: 1px solid black; padding: 10px">
-                <p>@((MarkupString)(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.front_text ?? "no card found"))</p>
-                <p>--------</p>
-                <p> @((MarkupString)(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.back_text ?? "no card found" ))</p>
+                else
+                {
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; color: #64748b; font-size: 0.9rem;">
+                        <span><strong>Due remaining:</strong> @dueCards.Count</span>
+                        <span>Interval: @currentCard.Interval d | Ease: @currentCard.EaseFactor.ToString("0.00")</span>
+                    </div>
+
+                    <div style="font-size: 1.25rem; padding: 12px 0;">
+                        @((MarkupString)(currentCard.front_text ?? ""))
+                    </div>
+
+                    @if (!showBack)
+                    {
+                        <button class="btn btn-primary btn-outline-secondary" @onclick="() => showBack = true">Show Answer</button>
+                    }
+                    else
+                    {
+                        <hr />
+                        <div style="font-size: 1.15rem; padding: 12px 0;">
+                            @((MarkupString)(currentCard.back_text ?? ""))
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="btn btn-danger" @onclick="() => ReviewCard(currentCard, 0)">Again (1d)</button>
+                            <button class="btn btn-warning" @onclick="() => ReviewCard(currentCard, 3)">Hard</button>
+                            <button class="btn btn-success" @onclick="() => ReviewCard(currentCard, 4)">Good</button>
+                            <button class="btn btn-primary" @onclick="() => ReviewCard(currentCard, 5)">Easy</button>
+                        </div>
+                    }
+                }
             </div>
-            <button @onclick="() => PreviousCard()">Previous Card</button>
-            <button @onclick="() => NextCard()">Next Card</button>
-            
-            
+            }
+            else
+            {
+                <div style = "display:flex; gap:16px">
+                    <h3>Current deck: @studyDeck.Name</h3>
+                <input class = "input" placeholder="Rename deck.." @bind="renameDeckSpace" @bind:event="oninput" @onkeydown="@(e=>
+                {
+                if (e.Key == "Enter") RenameDeck(studyDeck);
+                })"/>
+                    <button class="btn btn-primary btn-outline-secondary" @onclick="() => RenameDeck(studyDeck)">Rename deck</button>
+                </div>
+
+
+                <!-- Create the editor container -->
+                <div style="display: flex; gap: 16px; margin-top: 16px">
+                    <div style="width: 300px; margin-bottom: 16px;">
+                        <div id="editor" style="height: 200px;"></div>
+                    </div>
+
+                    <div style="width: 300px; margin-bottom: 16px;">
+                        <div id="editor2" style="height: 200px;"></div>
+                    </div>
+                </div>
+                <!-- Initialize Quill editor -->
+
+                <button class="btn btn-primary btn-outline-secondary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
+
+                <ul>
+                    @foreach (var card in studyDeck.Cards)
+                                                              {
+                <li class="flex-container child-element" style=" background: #f1f1f1; max-width: 600px; margin-top: 6px; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px">
+                    <div style="display: flex; gap: 20px;">
+                        <div>Front: @((MarkupString)(card.front_text ?? ""))</div>
+                        <div>Back: @((MarkupString)(card.back_text ?? ""))</div>
+                    </div>
+                <a @onclick="() => DeleteCard(card)">Delete</a>
+                    </li>
+
+                    }
+                </ul> 
+            }
         }
 
 
@@ -146,6 +193,7 @@
 </div>   
 
 @code {
+    private bool isStudyMode = false;
     
     private List<DeckModel> deckList = new List<DeckModel>();
     
@@ -260,6 +308,16 @@
     }
     
     public DeckModel? studyDeck;
+    
+    private bool showBack = false;
+
+    private List<CardModel> dueCards => studyDeck?.Cards
+        .Where(c => c.NextReview <= DateTime.UtcNow)
+        .OrderBy(c => c.NextReview)
+        .ToList() ?? new List<CardModel>();
+
+    private CardModel? currentCard => dueCards.FirstOrDefault();
+    
     public void StartStudy(DeckModel deckToStudy)
     {
         studyDeck = ReloadDeck(deckToStudy.Id);
@@ -295,5 +353,49 @@
         }
         
     }
-  
+    
+    private void ReviewCard(CardModel cardToReview, int grade)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var card = context.Cards.Find(cardToReview.id);
+        if (card == null) return;
+
+        if (grade >= 3)
+        {
+            card.Interval = card.Repetitions switch
+            {
+                0 => 1,
+                1 => 6,
+                _ => (int)Math.Round(card.Interval * card.EaseFactor)
+            };
+            card.Repetitions++;
+        }
+        else
+        {
+            card.Repetitions = 0;
+            card.Interval = 1;
+        }
+
+        double newEase = card.EaseFactor + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
+        card.EaseFactor = Math.Max(1.3, newEase);
+        card.NextReview = DateTime.UtcNow.AddDays(card.Interval);
+
+        context.SaveChanges();
+        showBack = false;
+        if (studyDeck != null) studyDeck = ReloadDeck(studyDeck.Id);
+    }
+
+    private void SimulateNextDay()
+    {
+        if (studyDeck == null) return;
+
+        using var context = DbFactory.CreateDbContext();
+        var cards = context.Cards.Where(c => c.deck_id == studyDeck.Id && c.deleted_at == null).ToList();
+        foreach (var card in cards)
+        {
+            card.NextReview = card.NextReview.AddDays(-1);
+        }
+        context.SaveChanges();
+        studyDeck = ReloadDeck(studyDeck.Id);
+    }
 }
