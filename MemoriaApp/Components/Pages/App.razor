@@ -7,17 +7,60 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
+<link
+    href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css"
+    rel="stylesheet"
+/>
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script>
+                window.initQuill = () => {
+                    const options = {
+                        modules: {
+                            toolbar: [
+                                [{ header: [1, 2, false] }],
+                                ['bold', 'italic', 'underline'],
+                            ],
+                        },
+                        placeholder: 'Compose a card...',
+                        theme: 'snow',
+                    };
 
+
+                    if (document.getElementById('editor') && !Quill.find(document.getElementById('editor'))) {
+                        new Quill('#editor', options);
+                    }
+
+                    if (document.getElementById('editor2') && !Quill.find(document.getElementById('editor2'))) {
+                        new Quill('#editor2', options);
+                    }
+                };
+                
+                window.getQuillHTML = (editorId) => {
+                    const container = document.getElementById(editorId);
+                    const editor = Quill.find(container);
+                    return editor ? editor.getSemanticHTML() : '';
+                };
+                window.clearQuillHTML = (editorId) => {
+                    const container = document.getElementById(editorId);
+                    const editor = container ? Quill.find(container) : null;
+                    if(editor) {
+                        editor.setText("");    
+                    }
+                };
+
+            </script>
 <PageTitle>My decks</PageTitle>
 <h1>App page</h1>
+
+
 <div class = "parent-div">
-    
     <div class = "column">
-        <input class = "input" placeholder="Deck name.." @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
+        <input class = "input" placeholder="Deck name.." style = "margin-bottom: 6px;" @bind="newDeck" @bind:event="oninput" @onkeydown="@(e=>
                                                                                                            {
                                                                                                                if (e.Key == "Enter") AddDeck();
                                                                                                            })"/>
-        <button class="btn btn-primary" @onclick="AddDeck">Add deck</button>
+        <button class="btn btn-primary btn-outline-secondary" @onclick="AddDeck">Add deck</button>
         <ul>
             @foreach (var deck in deckList)
             {
@@ -31,7 +74,7 @@
                     
                 </li>
             }
-            <p>Deleted decks:</p>
+            <p style = "margin-top: 6px;" >Deleted decks:</p>
             @foreach (var deck in deckList)
             {
                 <li class = "flex-container child-element">
@@ -59,28 +102,37 @@
                                                                                                                          {
                                                                                                                              if (e.Key == "Enter") RenameDeck(studyDeck);
                                                                                                                          })"/>
-            <button class="btn btn-primary" @onclick="() => RenameDeck(studyDeck)">Rename deck</button>
-            <input class="input" placeholder="Front.." @bind="newCardFront" @bind:event="oninput"/>
-            <input class="input" placeholder="Back.." @bind="newCardBack" @bind:event="oninput"/>
-            <button class="btn btn-primary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
+            <button class="btn btn-primary btn-outline-secondary" @onclick="() => RenameDeck(studyDeck)">Rename deck</button>
+
+            <!-- Create the editor container -->
+            <div style="display: flex; gap: 16px; margin-top: 16px">
+                <div style="width: 300px; margin-bottom: 16px;">
+                    <div id="editor" style="height: 200px;"></div>
+                </div>
+
+                <div style="width: 300px; margin-bottom: 16px;">
+                    <div id="editor2" style="height: 200px;"></div>
+                </div>
+            </div>
+            <!-- Initialize Quill editor -->
             
+            <button class="btn btn-primary btn-outline-secondary" @onclick="() => AddCard(studyDeck.Id)">Add card</button>
+
             <ul>
                 @foreach (var card in studyDeck.Cards)
                 {
-                    <li class="flex-container child-element">
-                        
-                        <p>Front: @card.front_text Back: @card.back_text </p>
+                    <li class="flex-container child-element" style = "background: #0dcaf0; margin: 5px; max-width: 600px; padding: 10px">
+                        <p>Front: @((MarkupString)(card.front_text ?? "")) Back:@((MarkupString)(card.back_text ?? "")) </p>
                         <a @onclick="() => DeleteCard(card)"> Delete</a>
-                        
                         
                     </li>
                 }
             </ul>
             
             <div style = "border: 1px solid black; padding: 10px">
-                <p> @(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.front_text ?? "no card found" )</p>
+                <p>@((MarkupString)(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.front_text ?? "no card found"))</p>
                 <p>--------</p>
-                <p> @(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.back_text ?? "no card found" )</p>
+                <p> @((MarkupString)(studyDeck.Cards.ElementAtOrDefault(cardPosition)?.back_text ?? "no card found" ))</p>
             </div>
             <button @onclick="() => PreviousCard()">Previous Card</button>
             <button @onclick="() => NextCard()">Next Card</button>
@@ -93,23 +145,18 @@
     
 </div>   
 
-
 @code {
-
+    
     private List<DeckModel> deckList = new List<DeckModel>();
     
     protected override async Task OnInitializedAsync()
     {
         await using var context = DbFactory.CreateDbContext();
         deckList = context.Decks.ToList();
-
     }
-
+   
     private string? newDeck;
-    private string? newCardFront;
-    private string? newCardBack;
-
-
+    
     private void DeleteDeck(DeckModel deckToDelete)
     {
         using var context = DbFactory.CreateDbContext();
@@ -120,8 +167,8 @@
             context.SaveChanges();
             deckToDelete.deleted_at = DateTime.Now;
         }
-        
     }
+    
     private void RestoreDeck(DeckModel deckToRestore)
     {
         using var context = DbFactory.CreateDbContext();
@@ -132,8 +179,8 @@
             context.SaveChanges();
             deckToRestore.deleted_at = null;
         }
-        
     }
+    
     private void AddDeck()
     {
         if (string.IsNullOrWhiteSpace(newDeck)) return;
@@ -165,7 +212,6 @@
             deckToRename.Name = renameDeckSpace;
             deckList = context.Decks.ToList();
         }
-        
     }
     
     private void DeleteCard(CardModel cardToDelete)
@@ -184,24 +230,33 @@
         }
     }
     
-    
-    private void AddCard(int deckIdLink)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (string.IsNullOrWhiteSpace(newCardFront) && string.IsNullOrWhiteSpace(newCardBack)) return;
-        
+        if (studyDeck != null)
+        {
+            await JS.InvokeVoidAsync("initQuill");
+        }
+    }
+   
+    private async Task AddCard(int deckIdLink)
+    {
+        if (string.IsNullOrWhiteSpace(await JS.InvokeAsync<string>("getQuillHTML", "editor")) && string.IsNullOrWhiteSpace(await JS.InvokeAsync<string>("getQuillHTML", "editor2"))) return;
+        string quillFrontValue = await JS.InvokeAsync<string>("getQuillHTML", "editor");
+        string quillBackValue = await JS.InvokeAsync<string>("getQuillHTML", "editor2");
         var card = new CardModel()
         {
-            front_text = newCardFront,
-            back_text = newCardBack,
+            front_text = quillFrontValue,
+            back_text = quillBackValue,
             deck_id = deckIdLink
         };
+        
         using var context = DbFactory.CreateDbContext();
         context.Cards.Add(card);
         context.SaveChanges();
         studyDeck = ReloadDeck(deckIdLink);
-        newCardFront = "";
-        newCardBack = "";
-        
+        await JS.InvokeVoidAsync("clearQuillHTML", "editor");
+        await JS.InvokeVoidAsync("clearQuillHTML", "editor2");
+
     }
     
     public DeckModel? studyDeck;
@@ -240,10 +295,5 @@
         }
         
     }
+  
 }
-
-
-
-
-
-
